@@ -6,7 +6,7 @@
     <title>Dynamic Excel Quiz App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
+    
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <style>
@@ -17,6 +17,7 @@
         .container {
             max-width: 90%;
             margin: 0 auto;
+            position: relative; 
         }
         /* Custom styles for the interactive buttons */
         .answer-btn {
@@ -41,7 +42,7 @@
             color: white;
             border-color: #60a5fa; /* Blue 400 */
         }
-
+        
         /* Final Result States (applied only after submission/timeout) */
         .answer-btn.correct {
             background-color: #10b981; /* Green 500 */
@@ -72,13 +73,27 @@
             color: #1a202c;
             margin-bottom: 1rem;
         }
+        
+        /* Style for the home button position */
+        #return-home-button {
+            position: absolute;
+            top: 20px; 
+            left: 20px; 
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="container max-w-4xl bg-white rounded-xl shadow-2xl p-6 md:p-10 border border-gray-100">
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+        <button id="return-home-button" 
+                class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-semibold rounded-lg shadow hover:bg-gray-300 transition"
+                onclick="restartQuiz()">
+            🏠 Home
+        </button>
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2 pt-10">
             Dynamic Excel Quiz App
         </h1>
 
@@ -91,10 +106,10 @@
                 (Reading **quiz.xlsx** from the GitHub Pages path.)
             </p>
         </div>
-
+        
         <div id="start-area" class="hidden text-center p-8 bg-green-50 rounded-xl border border-green-200">
             <h2 id="start-file-info" class="text-xl font-semibold text-green-700 mb-6"></h2>
-
+            
             <p class="text-xl font-bold text-gray-800 mb-4">Choose a Mode</p>
 
             <div class="flex justify-around space-x-4 mb-8 border-b pb-6">
@@ -144,13 +159,13 @@
                 <div id="feedback-message" class="font-bold text-lg"></div>
             </div>
         </div>
-
+        
         <div id="test-quiz-area" class="hidden">
              <div class="sticky top-0 bg-white z-10 py-3 mb-6 shadow-md rounded-lg border border-gray-200 px-6">
                 <div class="flex justify-between items-center text-gray-600 font-medium">
                     <span class="text-lg font-bold text-red-600">Time Remaining: <span id="test-timer-display">00:00:00</span></span>
                     <span class="text-lg text-gray-800">Total Questions: <span id="test-question-count"></span></span>
-                    <span id="test-score-display" class="text-lg text-green-600 font-bold hidden">Score: 0</span>
+                    <span id="test-score-display" class="text-lg text-green-600 font-bold hidden">Score: 0</span> 
                 </div>
             </div>
 
@@ -168,7 +183,7 @@
             <h2 id="result-title" class="text-3xl font-bold text-blue-800 mb-4">Quiz Complete!</h2>
             <p id="final-score" class="text-4xl font-extrabold text-blue-900 mb-6"></p>
             <p id="final-time" class="text-2xl font-semibold text-gray-700 mb-8"></p>
-
+            
             <div id="test-result-details" class="hidden">
                  <p id="test-mode-status" class="text-3xl font-extrabold mb-4"></p>
                  <p id="test-mode-details" class="text-xl text-gray-700 mb-6"></p>
@@ -183,17 +198,16 @@
 
     <script>
         // --- Configuration ---
-        // *** IMPORTANT: Ensure your Excel file is named "quiz.xlsx" and is in the same folder. ***
-        const AUTO_LOAD_FILENAME = "quiz.xlsx";
+        const AUTO_LOAD_FILENAME = "quiz.xlsx"; 
 
         // --- State Variables ---
-        let originalQuizData = [];
-        let quizData = [];
+        let originalQuizData = []; 
+        let quizData = []; 
         let currentQuestionIndex = 0;
         let score = 0;
         let isAnswered = false;
-        let mode = 'NORMAL';
-
+        let mode = 'NORMAL'; 
+        
         // --- Timer Variables ---
         let startTime = 0;
         let timerInterval = null;
@@ -208,10 +222,10 @@
         const maxQuestionsSpan = document.getElementById('max-questions');
         const normalStartBtn = document.getElementById('normal-start-btn');
         const randomStartBtn = document.getElementById('random-start-btn');
-        const testStartBtn = document.getElementById('test-start-btn');
-        const questionCountInput = document.getElementById('question-count-input');
-        const timeLimitInput = document.getElementById('time-limit-input');
-
+        const testStartBtn = document.getElementById('test-start-btn');       
+        const questionCountInput = document.getElementById('question-count-input'); 
+        const timeLimitInput = document.getElementById('time-limit-input');     
+        
         const quizArea = document.getElementById('quiz-area');
         const questionCount = document.getElementById('question-count');
         const scoreDisplay = document.getElementById('score-display');
@@ -220,50 +234,50 @@
         const answersContainer = document.getElementById('answers-container');
         const nextButton = document.getElementById('next-button');
         const feedbackMessage = document.getElementById('feedback-message');
-
+        
         const testQuizArea = document.getElementById('test-quiz-area');
         const testTimerDisplay = document.getElementById('test-timer-display');
         const testQuestionCount = document.getElementById('test-question-count');
         const testScoreDisplay = document.getElementById('test-score-display');
         const testQuestionsContainer = document.getElementById('test-questions-container');
         const submitTestBtn = document.getElementById('submit-test-btn');
-
+        
         const resultsArea = document.getElementById('results-area');
         const resultTitle = document.getElementById('result-title');
         const finalScore = document.getElementById('final-score');
         const finalTime = document.getElementById('final-time');
-        const testResultDetails = document.getElementById('test-result-details');
-        const testModeStatus = document.getElementById('test-mode-status');
-        const testModeDetails = document.getElementById('test-mode-details');
+        const testResultDetails = document.getElementById('test-result-details'); 
+        const testModeStatus = document.getElementById('test-mode-status');      
+        const testModeDetails = document.getElementById('test-mode-details');    
         const restartButton = document.getElementById('restart-button');
 
 
         // --- Utility Functions ---
-
+        
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
         }
-
+        
         function formatTime(totalSeconds) {
             const h = Math.floor(totalSeconds / 3600);
             const m = Math.floor((totalSeconds % 3600) / 60);
             const s = Math.floor(totalSeconds % 60);
-
+            
             const pad = (num) => String(num).padStart(2, '0');
             return `${pad(h)}:${pad(m)}:${pad(s)}`;
         }
-
+        
         function startTimer(limitInSeconds = 0) {
-            stopTimer();
+            stopTimer(); 
             startTime = Date.now();
             timeLimitSeconds = limitInSeconds;
             isOvertime = false;
 
             const displayElement = mode === 'TEST' ? testTimerDisplay : timerDisplay;
-
+            
             if (timeLimitSeconds > 0) {
                 displayElement.textContent = formatTime(timeLimitSeconds);
             } else {
@@ -280,10 +294,10 @@
                         displayElement.textContent = "TIME'S UP! (Overtime)";
                         displayElement.classList.add('text-yellow-600', 'font-extrabold');
                         isOvertime = true;
-
+                        
                         if (mode === 'TEST') {
                              clearInterval(timerInterval);
-                             handleSubmitTest();
+                             handleSubmitTest(); 
                         }
                     } else {
                         displayElement.textContent = formatTime(remainingSeconds);
@@ -295,7 +309,7 @@
                 }
             }, 1000);
         }
-
+        
         function stopTimer() {
             if (timerInterval) {
                 clearInterval(timerInterval);
@@ -307,9 +321,6 @@
 
         // --- Core Quiz Logic Functions ---
 
-        /**
-         * Automatically fetches and reads the Excel file from the server path (GitHub Pages).
-         */
         function loadFileAutomatically() {
             statusMessage.textContent = `Fetching file: ${AUTO_LOAD_FILENAME}...`;
             statusMessage.className = 'mt-3 text-sm text-yellow-800';
@@ -319,7 +330,7 @@
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}. Please ensure **quiz.xlsx** is correctly uploaded.`);
                     }
-                    return response.arrayBuffer();
+                    return response.arrayBuffer(); 
                 })
                 .then(data => {
                     const dataUint8 = new Uint8Array(data);
@@ -333,16 +344,12 @@
                 });
         }
 
-        /**
-         * Processes the workbook data.
-         */
         function handleWorkbook(workbook) {
             try {
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                // Use { header: 1 } to get an array of arrays (rows)
                 const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-
+                
                 if (sheetData.length <= 1) {
                     throw new Error('The selected sheet contains no quiz data.');
                 }
@@ -350,12 +357,11 @@
                 const parsedData = [];
                 for (let i = 1; i < sheetData.length; i++) {
                     const columns = sheetData[i];
-
-                    // Assuming columns: 0:ID, 1:Question, 2:A, 3:B, 4:C, 5:D, 6:Correct Answer
+                    
                     if (columns && columns.length >= 7) {
                         parsedData.push({
-                            id: i,
-                            question: String(columns[1] || '').trim(),
+                            id: i, 
+                            question: String(columns[1] || '').trim(), 
                             answers: {
                                 A: String(columns[2] || '').trim(),
                                 B: String(columns[3] || '').trim(),
@@ -369,9 +375,9 @@
                         console.warn(`[Parser Warning] Skipped row ${i + 1} due to insufficient columns.`);
                     }
                 }
-
-                originalQuizData = parsedData;
-                quizData = parsedData;
+                
+                originalQuizData = parsedData; 
+                quizData = parsedData; 
 
                 if (originalQuizData.length === 0) {
                     throw new Error('No valid quiz questions were parsed from the sheet.');
@@ -383,10 +389,10 @@
 
                 maxQuestionsSpan.textContent = originalQuizData.length;
                 questionCountInput.max = originalQuizData.length;
-
+                
                 if (originalQuizData.length > 0) {
                     testStartBtn.disabled = false;
-                    questionCountInput.value = Math.min(30, originalQuizData.length);
+                    questionCountInput.value = Math.min(30, originalQuizData.length); 
                 }
 
             } catch (error) {
@@ -395,23 +401,23 @@
                 statusMessage.className = 'mt-3 text-sm text-red-800';
             }
         }
-
+        
         function startQuiz(isRandom) {
             mode = isRandom ? 'RANDOM' : 'NORMAL';
-            quizData = [...originalQuizData];
+            quizData = [...originalQuizData]; 
 
             startArea.classList.add('hidden');
             testQuizArea.classList.add('hidden');
             quizArea.classList.remove('hidden');
-
+            
             if (isRandom) {
                 shuffleArray(quizData);
             }
-
+            
             currentQuestionIndex = 0;
             score = 0;
             isAnswered = false;
-
+            
             startTimer(0);
             loadQuestion();
         }
@@ -432,87 +438,93 @@
 
             mode = 'TEST';
             score = 0;
-
-            // Select and shuffle the questions for the test
+            
             const shuffledData = [...originalQuizData];
             shuffleArray(shuffledData);
             quizData = shuffledData.slice(0, qCount).map(q => ({...q, userAnswer: null}));
-
+            
             startArea.classList.add('hidden');
             quizArea.classList.add('hidden');
             testQuizArea.classList.remove('hidden');
 
             testQuestionCount.textContent = quizData.length;
-
+            
             renderTestQuestions();
-
-            startTimer(tLimit * 60);
+            
+            startTimer(tLimit * 60); 
         }
 
+        // *** MODIFIED FUNCTION: Shuffles answer options for Test Mode ***
         function renderTestQuestions() {
             testQuestionsContainer.innerHTML = '';
-
+            
             quizData.forEach((q, index) => {
                 const questionElement = document.createElement('div');
                 questionElement.classList.add('question-item');
-
+                
                 const qText = document.createElement('p');
                 qText.classList.add('question-text-test');
                 qText.textContent = `${index + 1}. ${q.question}`;
                 questionElement.appendChild(qText);
-
+                
                 const answersDiv = document.createElement('div');
                 answersDiv.dataset.questionIndex = index;
-
-                const answerKeys = Object.keys(q.answers);
-                answerKeys.forEach(key => {
-                    const answerText = q.answers[key];
+                
+                // 1. Get the answer keys (A, B, C, D)
+                let answerKeys = Object.keys(q.answers);
+                
+                // 2. SHUFFLE the keys
+                shuffleArray(answerKeys); 
+                
+                // 3. Render buttons using the SHUFFLED order
+                answerKeys.forEach(originalKey => { // Use originalKey to fetch the text
+                    const answerText = q.answers[originalKey];
                     const button = document.createElement('button');
 
                     button.classList.add('answer-btn');
-                    button.textContent = `${key}. ${answerText}`;
-                    button.dataset.answerKey = key;
-                    button.dataset.qIndex = index;
+                    // Display the option letter (A, B, C, D) based on the SHUFFLED position
+                    // We generate a temporary display letter for the user (e.g., A, B, C, D)
+                    // The underlying data-answer-key still holds the original key (A, B, C, D from Excel)
+                    const displayLetter = String.fromCharCode(65 + answersDiv.children.length); 
+                    
+                    button.textContent = `${displayLetter}. ${answerText}`;
+                    button.dataset.answerKey = originalKey; // Use the ORIGINAL key (A, B, C, D) for checking correctness
+                    button.dataset.qIndex = index; 
                     button.addEventListener('click', handleTestAnswerClick);
 
                     answersDiv.appendChild(button);
                 });
-
+                
                 questionElement.appendChild(answersDiv);
                 testQuestionsContainer.appendChild(questionElement);
             });
         }
-
-        /**
-         * Test Mode Handler: Only saves the answer and marks the button visually.
-         */
+        
         function handleTestAnswerClick(event) {
             const selectedButton = event.target;
-            const selectedKey = selectedButton.dataset.answerKey;
+            // Note: selectedKey here is the ORIGINAL key from the Excel data (A, B, C, D)
+            const selectedKey = selectedButton.dataset.answerKey; 
             const qIndex = parseInt(selectedButton.dataset.qIndex);
-
-            const answersDiv = selectedButton.closest('div');
+            
+            const answersDiv = selectedButton.closest('div'); 
             const allButtons = answersDiv.querySelectorAll('.answer-btn');
-
+            
             // 1. Clear previous selection (if any)
             allButtons.forEach(btn => {
                 btn.classList.remove('selected');
             });
-
+            
             // 2. Mark the new selection
             selectedButton.classList.add('selected');
 
-            // 3. Save the answer to the data structure
+            // 3. Save the answer to the data structure (using the ORIGINAL key)
             quizData[qIndex].userAnswer = selectedKey;
         }
-
-        /**
-         * Test Mode Submission: Calculates score and reveals results.
-         */
+        
         function handleSubmitTest() {
-            stopTimer();
-            score = 0;
-
+            stopTimer(); 
+            score = 0; 
+            
             // 1. Calculate Score & Reveal Answers
             quizData.forEach((q, index) => {
                 const userChoice = q.userAnswer;
@@ -525,10 +537,11 @@
                 const answersDiv = document.querySelector(`[data-question-index="${index}"]`);
                 if (answersDiv) {
                     const allButtons = answersDiv.querySelectorAll('.answer-btn');
-
+                    
                     allButtons.forEach(btn => {
-                        const key = btn.dataset.answerKey;
-
+                        // The data-answer-key holds the ORIGINAL key from Excel (A, B, C, D)
+                        const key = btn.dataset.answerKey; 
+                        
                         btn.disabled = true;
 
                         if (key === correctKey) {
@@ -546,7 +559,7 @@
             showResults(true);
         }
 
-        // --- Functions for Normal/Random Mode ---
+        // --- Functions for Normal/Random Mode (No changes needed, they already shuffle) ---
 
         function loadQuestion() {
             resultsArea.classList.add('hidden');
@@ -560,7 +573,7 @@
             isAnswered = false;
             nextButton.disabled = true;
             feedbackMessage.textContent = '';
-            answersContainer.innerHTML = '';
+            answersContainer.innerHTML = ''; 
 
             const currentQuiz = quizData[currentQuestionIndex];
 
@@ -568,14 +581,19 @@
             questionCount.textContent = `Question ${currentQuestionIndex + 1} / ${quizData.length}`;
             scoreDisplay.textContent = `Score: ${score}`;
 
+            // This section also already shuffles answers (implicitly in the previous version)
             const answerKeys = Object.keys(currentQuiz.answers);
-            answerKeys.forEach(key => {
-                const answerText = currentQuiz.answers[key];
+            shuffleArray(answerKeys); // Explicitly shuffle here for clarity
+
+            answerKeys.forEach((originalKey, i) => {
+                const answerText = currentQuiz.answers[originalKey];
                 const button = document.createElement('button');
+                
+                const displayLetter = String.fromCharCode(65 + i); // Re-assign A, B, C, D based on shuffled position
 
                 button.classList.add('answer-btn');
-                button.textContent = `${key}. ${answerText}`;
-                button.dataset.answerKey = key;
+                button.textContent = `${displayLetter}. ${answerText}`;
+                button.dataset.answerKey = originalKey; // Stores the original key (e.g., 'B')
                 button.addEventListener('click', handleAnswerClick);
 
                 answersContainer.appendChild(button);
@@ -589,7 +607,7 @@
             nextButton.disabled = false;
 
             const selectedButton = event.target;
-            const selectedKey = selectedButton.dataset.answerKey;
+            const selectedKey = selectedButton.dataset.answerKey; // Original key
             const currentQuiz = quizData[currentQuestionIndex];
             const correctKey = currentQuiz.correctAnswer;
             const allButtons = answersContainer.querySelectorAll('.answer-btn');
@@ -624,24 +642,24 @@
         }
 
         function showResults(isTestMode) {
-            const finalTimeString = stopTimer();
-
+            const finalTimeString = stopTimer(); 
+            
             quizArea.classList.add('hidden');
             testQuizArea.classList.add('hidden');
             resultsArea.classList.remove('hidden');
-
+            
             const totalQuestions = quizData.length;
             finalScore.textContent = `You scored ${score} out of ${totalQuestions}!`;
             finalTime.textContent = `Time taken: ${finalTimeString}`;
 
             if (isTestMode) {
-                const passThreshold = Math.ceil(totalQuestions * 0.5);
+                const passThreshold = Math.ceil(totalQuestions * 0.5); 
                 const isPassed = score >= passThreshold && !isOvertime;
                 const percentage = ((score / totalQuestions) * 100).toFixed(1);
 
                 testResultDetails.classList.remove('hidden');
                 resultTitle.textContent = 'Test Results';
-
+                
                 if (isPassed) {
                     testModeStatus.textContent = '🎉 TEST PASSED! 🎉';
                     testModeStatus.className = 'text-3xl font-extrabold mb-4 text-green-700';
@@ -658,7 +676,7 @@
                 } else {
                     detailsText += ` You finished within the time limit.`;
                 }
-
+                
                 testModeDetails.textContent = detailsText;
             } else {
                 resultTitle.textContent = 'Quiz Complete!';
@@ -672,29 +690,28 @@
             isAnswered = false;
             startTime = 0;
             mode = 'NORMAL';
-            stopTimer();
+            stopTimer(); 
 
             resultsArea.classList.add('hidden');
             quizArea.classList.add('hidden');
             testQuizArea.classList.add('hidden');
-            startArea.classList.add('hidden');
+            startArea.classList.add('hidden'); 
             testResultDetails.classList.add('hidden');
 
-            // Re-run the auto-load process
             statusArea.classList.remove('hidden');
-
+            
             loadFileAutomatically();
         }
 
         // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', loadFileAutomatically); // AUTO-START
+        document.addEventListener('DOMContentLoaded', loadFileAutomatically); 
 
         nextButton.addEventListener('click', nextQuestion);
         restartButton.addEventListener('click', restartQuiz);
 
-        normalStartBtn.addEventListener('click', () => startQuiz(false));
-        randomStartBtn.addEventListener('click', () => startQuiz(true));
-        testStartBtn.addEventListener('click', startTestMode);
+        normalStartBtn.addEventListener('click', () => startQuiz(false)); 
+        randomStartBtn.addEventListener('click', () => startQuiz(true));  
+        testStartBtn.addEventListener('click', startTestMode); 
         submitTestBtn.addEventListener('click', handleSubmitTest);
     </script>
 </body>
