@@ -240,7 +240,7 @@
         const timerDisplay = document.getElementById('timer-display');
         const questionText = document.getElementById('question-text');
         const answersContainer = document.getElementById('answers-container');
-        const previousButton = document.getElementById('previous-button'); // NEW
+        const previousButton = document.getElementById('previous-button'); 
         const nextButton = document.getElementById('next-button');
         const feedbackMessage = document.getElementById('feedback-message');
         
@@ -301,6 +301,7 @@
 
                     if (remainingSeconds <= 0) {
                         displayElement.textContent = "TIME'S UP! (Overtime)";
+                        displayElement.classList.remove('text-red-600');
                         displayElement.classList.add('text-yellow-600', 'font-extrabold');
                         isOvertime = true;
                         
@@ -422,8 +423,9 @@
             quizArea.classList.remove('hidden');
             
             if (isRandom) {
-                shuffleArray(quizData);
+                shuffleArray(quizData); // Randomize question order
             }
+            // If isRandom is false, question order remains linear
             
             currentQuestionIndex = 0;
             score = 0;
@@ -488,25 +490,39 @@
             
             // Shuffle keys only once and store them, or use the stored order
             let answerKeys = currentQuiz.shuffledKeys;
+            
             if (!answerKeys) {
                 answerKeys = Object.keys(currentQuiz.answers);
-                shuffleArray(answerKeys);
+                
+                // --- FIX: Only shuffle answers in RANDOM or TEST mode ---
+                if (mode === 'RANDOM' || mode === 'TEST') {
+                    shuffleArray(answerKeys); // Shuffle the order of the keys
+                }
+                // If mode is 'NORMAL' (Study), answerKeys remains ['A', 'B', 'C', 'D']
+                
                 currentQuiz.shuffledKeys = answerKeys; // Save the order
             }
+
+
+            let correctDisplayLetter = '';
 
             // Render buttons based on the saved/newly shuffled order
             answerKeys.forEach((originalKey, i) => {
                 const answerText = currentQuiz.answers[originalKey];
                 const button = document.createElement('button');
                 
-                const displayLetter = String.fromCharCode(65 + i); 
+                const displayLetter = String.fromCharCode(65 + i); // Display letter A, B, C, D
+                
+                if (originalKey === currentQuiz.correctAnswer) {
+                     correctDisplayLetter = displayLetter; // Capture the correct display letter
+                }
 
                 button.classList.add('answer-btn');
                 button.textContent = `${displayLetter}. ${answerText}`;
                 button.dataset.answerKey = originalKey; // Stores the original key (e.g., 'B')
                 button.addEventListener('click', handleAnswerClick);
 
-                // Apply existing state if answered
+                // Apply existing state if answered (Review Mode)
                 if (currentQuiz.answered) {
                     button.disabled = true;
                     if (originalKey === currentQuiz.correctAnswer) {
@@ -516,12 +532,10 @@
                         feedbackMessage.classList.remove('text-red-500');
                     } else if (originalKey === currentQuiz.userAnswer) {
                         button.classList.add('incorrect');
-                        feedbackMessage.textContent = '❌ Review: Incorrect. The correct answer is ' + currentQuiz.correctAnswer;
+                        // Use the captured correctDisplayLetter for review feedback
+                        feedbackMessage.textContent = '❌ Review: Incorrect. The correct answer is ' + correctDisplayLetter + '.';
                         feedbackMessage.classList.add('text-red-500');
                         feedbackMessage.classList.remove('text-green-600');
-                    } else {
-                        // Clear feedback message if an unanswered question is loaded
-                        feedbackMessage.textContent = '';
                     }
                 }
                 
@@ -550,14 +564,18 @@
             currentQuiz.userAnswer = selectedKey; 
             currentQuiz.answered = true;
             isAnswered = true; // Global state for current question
+            
+            let correctDisplayLetter = ''; // Variable to hold the correct display letter
 
-            // 2. Apply styling and disable buttons
-            allButtons.forEach(btn => {
+            // 2. Apply styling, disable buttons, and find the correct display letter
+            allButtons.forEach((btn, i) => { // Use index 'i' to determine display letter
                 btn.disabled = true;
                 const key = btn.dataset.answerKey;
+                const displayLetter = String.fromCharCode(65 + i); // Calculate display letter
 
                 if (key === correctKey) {
                     btn.classList.add('correct');
+                    correctDisplayLetter = displayLetter; // Capture the correct display letter
                 } else if (key === selectedKey) {
                     btn.classList.add('incorrect');
                 }
@@ -570,7 +588,8 @@
                 feedbackMessage.classList.remove('text-red-500');
                 feedbackMessage.classList.add('text-green-600');
             } else {
-                feedbackMessage.textContent = '❌ Incorrect. The correct answer is ' + correctKey;
+                // Use the correctDisplayLetter in the feedback
+                feedbackMessage.textContent = '❌ Incorrect. The correct answer is ' + correctDisplayLetter + '.';
                 feedbackMessage.classList.remove('text-green-600');
                 feedbackMessage.classList.add('text-red-500');
             }
@@ -602,7 +621,7 @@
             }
         }
 
-        // --- Functions for Test Mode (Not Modified Here) ---
+        // --- Functions for Test Mode ---
         
         function startTestMode() {
             const qCount = parseInt(questionCountInput.value);
@@ -623,7 +642,13 @@
             
             const shuffledData = [...originalQuizData];
             shuffleArray(shuffledData);
-            quizData = shuffledData.slice(0, qCount).map(q => ({...q, userAnswer: null}));
+            // Slice and map to create a fresh set of questions for the test
+            quizData = shuffledData.slice(0, qCount).map(q => ({
+                ...q, 
+                userAnswer: null, 
+                answered: false, 
+                shuffledKeys: null // Ensure answers are shuffled again for the test
+            })); 
             
             startArea.classList.add('hidden');
             quizArea.classList.add('hidden');
@@ -651,19 +676,19 @@
                 const answersDiv = document.createElement('div');
                 answersDiv.dataset.questionIndex = index;
                 
-                // 1. Get the answer keys (A, B, C, D)
                 let answerKeys = Object.keys(q.answers);
-                
-                // 2. SHUFFLE the keys
+                // Shuffle keys for Test Mode
                 shuffleArray(answerKeys); 
                 
-                // 3. Render buttons using the SHUFFLED order
-                answerKeys.forEach(originalKey => { // Use originalKey to fetch the text
+                // Save the shuffled order for later result display
+                q.shuffledKeys = answerKeys;
+                
+                // Render buttons using the SHUFFLED order
+                answerKeys.forEach(originalKey => { 
                     const answerText = q.answers[originalKey];
                     const button = document.createElement('button');
 
                     button.classList.add('answer-btn');
-                    // Display the option letter (A, B, C, D) based on the SHUFFLED position
                     const displayLetter = String.fromCharCode(65 + answersDiv.children.length); 
                     
                     button.textContent = `${displayLetter}. ${answerText}`;
