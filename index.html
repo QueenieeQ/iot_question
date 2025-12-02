@@ -118,10 +118,10 @@
         <div id="search-area" class="hidden p-6 bg-purple-50 rounded-xl border border-purple-200 mb-8">
             <h2 class="text-xl font-bold text-purple-800 mb-4">Question Search (Minimum 3 words)</h2>
             <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
-                <input type="text" id="search-input" placeholder="Enter keywords (e.g., 'What is IoT security')" 
+                <input type="text" id="search-input" placeholder="Enter keywords" 
                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
                 <button id="execute-search-btn" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition">
-                    Search Questions
+                    Search
                 </button>
             </div>
             
@@ -894,10 +894,13 @@
 
         function performSearch() {
             const query = searchInput.value.trim().toLowerCase();
-            const queryWords = query.split(/\s+/).filter(word => word.length > 2); // Ignore very short words
+            
+            // 1. Split by whitespace to get words, keeping all words regardless of length (Fix for "in a BLE")
+            const queryWords = query.split(/\s+/).filter(word => word.length > 0); 
 
+            // 2. Check if there are at least 3 words entered (as requested)
             if (queryWords.length < 3) {
-                searchValidationMessage.textContent = 'Please enter a minimum of 3 keywords to perform a search.';
+                searchValidationMessage.textContent = 'Please enter a minimum of 3 words to perform a search.';
                 searchValidationMessage.classList.remove('hidden');
                 searchResultsArea.classList.add('hidden');
                 return;
@@ -911,6 +914,7 @@
                 
                 // Simple keyword matching for scoring
                 queryWords.forEach(word => {
+                    // Check if the question text includes the word (even short ones like 'in' or 'a')
                     if (questionTextLower.includes(word)) {
                         score += 1;
                     }
@@ -943,9 +947,10 @@
                 const resultDiv = document.createElement('div');
                 resultDiv.classList.add('mb-4', 'p-3', 'bg-white', 'rounded-lg', 'border');
                 
+               
                 resultDiv.innerHTML = `
                     <p class="font-bold text-base text-gray-800 mb-1">Q${index + 1}. ${result.question}</p>
-                    <p class="text-sm font-semibold text-green-700">A: ${result.correctAnswer}</p>
+                    <p class="text-base font-semibold text-green-700">A: ${result.correctAnswer}</p>
                 `;
                 searchResultsArea.appendChild(resultDiv);
             });
