@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IOT Quiz</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
+    <!-- SheetJS Library for reading .xlsx and .xls files -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <style>
@@ -17,7 +19,6 @@
         .container {
             max-width: 90%;
             margin: 0 auto;
-            position: relative; 
         }
         /* Custom styles for the interactive buttons */
         .answer-btn {
@@ -74,16 +75,17 @@
             margin-bottom: 1rem;
         }
         
-        /* Style for the home button position */
-        #return-home-button {
-            position: absolute;
-            top: 20px; 
-            left: 20px; 
-            z-index: 10;
+        /* Ensure buttons are in the flow but aligned */
+        #return-home-button, #search-mode-button {
+            position: static; 
+            top: auto; 
+            left: auto; 
+            z-index: auto;
         }
+        
         /* Keep feedback message visible in the flow */
         #feedback-message {
-            flex-grow: 1; /* Allows it to take up space between buttons */
+            flex-grow: 1; 
             text-align: center;
         }
     </style>
@@ -92,16 +94,46 @@
 
     <div class="container max-w-4xl bg-white rounded-xl shadow-2xl p-6 md:p-10 border border-gray-100">
 
-        <button id="return-home-button" 
-                class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-semibold rounded-lg shadow hover:bg-gray-300 transition"
-                onclick="restartQuiz()">
-            🏠 Home
-        </button>
+        <!-- HEADER BLOCK FOR ALIGNMENT -->
+        <div class="flex justify-between items-center pt-4">
+            <!-- Home Button (left aligned) -->
+            <button id="return-home-button" 
+                    class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-semibold rounded-lg shadow hover:bg-gray-300 transition"
+                    onclick="restartQuiz()">
+                🏠 Home
+            </button>
+        
+            <!-- Search Button (right aligned) -->
+            <button id="search-mode-button" 
+                    class="px-4 py-2 bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow hover:bg-indigo-600 transition">
+                🔍 Search
+            </button>
+        </div>
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2 pt-10">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2 pt-4">
             IOT Quiz
         </h1>
+        
+        <!-- Search Area (NEW) -->
+        <div id="search-area" class="hidden p-6 bg-purple-50 rounded-xl border border-purple-200 mb-8">
+            <h2 class="text-xl font-bold text-purple-800 mb-4">Question Search (Minimum 3 words)</h2>
+            <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
+                <input type="text" id="search-input" placeholder="Enter keywords (e.g., 'What is IoT security')" 
+                       class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                <button id="execute-search-btn" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition">
+                    Search Questions
+                </button>
+            </div>
+            
+            <p id="search-validation-message" class="mt-2 text-red-500 font-medium hidden"></p>
+            
+            <div id="search-results-area" class="mt-4 p-4 bg-white rounded-lg border border-gray-100 hidden">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Closest Results:</h3>
+                <!-- Results will be injected here -->
+            </div>
+        </div>
 
+        <!-- File Load Status Area - Configured for Automatic Loading -->
         <div id="status-area" class="text-center text-sm mb-4 p-5 rounded-lg bg-indigo-50 border border-indigo-200">
             <h2 class="block text-xl font-semibold text-indigo-700 mb-2">
                 Automatic Data Load
@@ -112,11 +144,13 @@
             </p>
         </div>
         
+        <!-- Start Options Area -->
         <div id="start-area" class="hidden text-center p-8 bg-green-50 rounded-xl border border-green-200">
             <h2 id="start-file-info" class="text-xl font-semibold text-green-700 mb-6"></h2>
             
             <p class="text-xl font-bold text-gray-800 mb-4">Choose a Mode</p>
 
+            <!-- Mode Buttons: Normal and Random -->
             <div class="flex justify-around space-x-4 mb-8 border-b pb-6">
                 <button id="normal-start-btn" class="flex-1 py-3 px-6 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition">
                     ▶️ Study Mode (Linear)
@@ -126,6 +160,7 @@
                 </button>
             </div>
 
+            <!-- Test Mode Inputs -->
             <div class="p-6 bg-red-100 rounded-lg shadow-inner">
                 <h3 class="text-xl font-bold text-red-800 mb-4">⏱️ Test Mode (Timed & Limited)</h3>
                 <div class="flex justify-between space-x-4 mb-4">
@@ -144,6 +179,7 @@
             </div>
         </div>
 
+        <!-- Quiz Area (FOR STUDY/RANDOM MODE) -->
         <div id="quiz-area" class="hidden">
             <div class="flex justify-between items-center mb-6 text-gray-600 font-medium">
                 <span id="question-count" class="text-lg">Question 1 / X</span>
@@ -157,6 +193,7 @@
 
             <div id="answers-container"></div>
 
+            <!-- MODIFIED NAVIGATION BUTTONS -->
             <div class="mt-8 flex justify-between items-center space-x-4">
                 <button id="previous-button" class="px-6 py-3 bg-gray-400 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500 transition duration-150 ease-in-out disabled:opacity-50">
                     ⬅️ Previous
@@ -168,6 +205,7 @@
             </div>
         </div>
         
+        <!-- Test Quiz Area -->
         <div id="test-quiz-area" class="hidden">
              <div class="sticky top-0 bg-white z-10 py-3 mb-6 shadow-md rounded-lg border border-gray-200 px-6">
                 <div class="flex justify-between items-center text-gray-600 font-medium">
@@ -178,7 +216,8 @@
             </div>
 
             <div id="test-questions-container" class="mt-4">
-                </div>
+                <!-- All test questions are rendered here -->
+            </div>
 
             <div class="mt-8 pt-4 border-t flex justify-center">
                 <button id="submit-test-btn" class="px-8 py-4 bg-red-600 text-white text-xl font-bold rounded-lg shadow-xl hover:bg-red-700 transition">
@@ -187,6 +226,7 @@
             </div>
         </div>
 
+        <!-- Results Area -->
         <div id="results-area" class="hidden text-center mt-10 p-8 bg-blue-50 rounded-xl">
             <h2 id="result-title" class="text-3xl font-bold text-blue-800 mb-4">Quiz Complete!</h2>
             <p id="final-score" class="text-4xl font-extrabold text-blue-900 mb-6"></p>
@@ -198,6 +238,7 @@
             </div>
 
             <div class="flex justify-center space-x-4">
+                <!-- NEW BUTTON FOR TEST MODE REVIEW -->
                 <button id="review-test-button" class="hidden px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition duration-150 ease-in-out">
                     📝 View Review Answers
                 </button>
@@ -219,7 +260,7 @@
         let quizData = []; 
         let currentQuestionIndex = 0;
         let score = 0;
-        let isAnswered = false; // Tracks if the CURRENT question has been answered for feedback purposes
+        let isAnswered = false; 
         let mode = 'NORMAL'; 
         
         // --- Timer Variables ---
@@ -266,6 +307,14 @@
         const testModeDetails = document.getElementById('test-mode-details');    
         const restartButton = document.getElementById('restart-button');
         const reviewTestButton = document.getElementById('review-test-button');
+        
+        // --- New Search Elements ---
+        const searchModeButton = document.getElementById('search-mode-button');
+        const searchArea = document.getElementById('search-area');
+        const searchInput = document.getElementById('search-input');
+        const executeSearchBtn = document.getElementById('execute-search-btn');
+        const searchResultsArea = document.getElementById('search-results-area');
+        const searchValidationMessage = document.getElementById('search-validation-message');
 
 
         // --- Utility Functions ---
@@ -335,12 +384,14 @@
             return formatTime(elapsedSeconds);
         }
 
-
         // --- Core Quiz Logic Functions ---
 
         function loadFileAutomatically() {
             statusMessage.textContent = `Fetching file: ${AUTO_LOAD_FILENAME}...`;
             statusMessage.className = 'mt-3 text-sm text-yellow-800';
+            
+            // Hide all main areas
+            hideAllAreas();
 
             fetch(AUTO_LOAD_FILENAME)
                 .then(response => {
@@ -386,9 +437,9 @@
                                 D: String(columns[5] || '').trim()
                             },
                             correctAnswer: String(columns[6] || '').trim().toUpperCase(),
-                            userAnswer: null, // Stores the user's selected key (e.g., 'B')
-                            answered: false,   // Tracks if the user has clicked an answer
-                            shuffledKeys: null // To store the order of buttons rendered
+                            userAnswer: null, 
+                            answered: false,  
+                            shuffledKeys: null 
                         });
                     } else {
                         console.warn(`[Parser Warning] Skipped row ${i + 1} due to insufficient columns.`);
@@ -404,6 +455,7 @@
 
                 statusArea.classList.add('hidden');
                 startArea.classList.remove('hidden');
+                searchArea.classList.add('hidden'); // Ensure search is hidden on initial load
                 startFileInfo.textContent = `Ready to start ${originalQuizData.length}-question quiz from sheet: "${sheetName}"`;
 
                 maxQuestionsSpan.textContent = originalQuizData.length;
@@ -422,21 +474,19 @@
         }
         
         function startQuiz(isRandom) {
-            mode = isRandom ? 'RANDOM' : 'NORMAL'; // NORMAL is now 'Study Mode'
-            quizData = JSON.parse(JSON.stringify(originalQuizData)); // Deep copy to reset answers/state
+            mode = isRandom ? 'RANDOM' : 'NORMAL'; 
+            quizData = JSON.parse(JSON.stringify(originalQuizData)); 
 
-            startArea.classList.add('hidden');
-            testQuizArea.classList.add('hidden');
+            hideAllAreas();
             quizArea.classList.remove('hidden');
             
             if (isRandom) {
-                shuffleArray(quizData); // Randomize question order
+                shuffleArray(quizData); 
             }
-            // If isRandom is false, question order remains linear
             
             currentQuestionIndex = 0;
             score = 0;
-            isAnswered = false; // Reset for the first question
+            isAnswered = false; 
             
             startTimer(0);
             loadQuestion();
@@ -445,26 +495,21 @@
         // --- Functions for Study/Random Mode (Previous/Next Logic) ---
 
         function updateNavigationButtons() {
-            // Disable 'Previous' on the first question
             previousButton.disabled = currentQuestionIndex === 0;
 
-            // If it's the last question
             if (currentQuestionIndex === quizData.length - 1) {
-                // If the last question is answered, show 'Show Results'
                 if (quizData[currentQuestionIndex].answered) {
                     nextButton.textContent = 'Show Results 🏆';
                     nextButton.disabled = false;
                     nextButton.classList.remove('bg-blue-600');
                     nextButton.classList.add('bg-green-600');
                 } else {
-                    // If the last question is not answered, the answer logic handles enabling/disabling
                     nextButton.textContent = 'Next Question ➡️';
                     nextButton.disabled = !isAnswered;
                     nextButton.classList.add('bg-blue-600');
                     nextButton.classList.remove('bg-green-600');
                 }
             } else {
-                // For all other questions
                 nextButton.textContent = 'Next Question ➡️';
                 nextButton.disabled = !quizData[currentQuestionIndex].answered;
                 nextButton.classList.add('bg-blue-600');
@@ -473,7 +518,7 @@
         }
         
         function loadQuestion() {
-            resultsArea.classList.add('hidden');
+            hideAllAreas();
             quizArea.classList.remove('hidden');
 
             if (currentQuestionIndex >= quizData.length) {
@@ -483,50 +528,43 @@
 
             const currentQuiz = quizData[currentQuestionIndex];
             
-            // Set global state based on current question's saved state
             isAnswered = currentQuiz.answered;
             
             questionText.textContent = currentQuiz.question;
             questionCount.textContent = `Question ${currentQuestionIndex + 1} / ${quizData.length}`;
             
-            // Recalculate and display the current score based on current quizData state
             score = quizData.filter(q => q.answered && q.userAnswer === q.correctAnswer).length;
             scoreDisplay.textContent = `Score: ${score}`;
 
             answersContainer.innerHTML = ''; 
             
-            // Shuffle keys only once and store them, or use the stored order
             let answerKeys = currentQuiz.shuffledKeys;
             
             if (!answerKeys) {
                 answerKeys = Object.keys(currentQuiz.answers);
                 
-                // --- FIX: Only shuffle answers in RANDOM or TEST mode ---
                 if (mode === 'RANDOM' || mode === 'TEST') {
-                    shuffleArray(answerKeys); // Shuffle the order of the keys
+                    shuffleArray(answerKeys); 
                 }
-                // If mode is 'NORMAL' (Study), answerKeys remains ['A', 'B', 'C', 'D']
                 
-                currentQuiz.shuffledKeys = answerKeys; // Save the order
+                currentQuiz.shuffledKeys = answerKeys; 
             }
-
 
             let correctDisplayLetter = '';
 
-            // Render buttons based on the saved/newly shuffled order
             answerKeys.forEach((originalKey, i) => {
                 const answerText = currentQuiz.answers[originalKey];
                 const button = document.createElement('button');
                 
-                const displayLetter = String.fromCharCode(65 + i); // Display letter A, B, C, D
+                const displayLetter = String.fromCharCode(65 + i); 
                 
                 if (originalKey === currentQuiz.correctAnswer) {
-                     correctDisplayLetter = displayLetter; // Capture the correct display letter
+                     correctDisplayLetter = displayLetter; 
                 }
 
                 button.classList.add('answer-btn');
                 button.textContent = `${displayLetter}. ${answerText}`;
-                button.dataset.answerKey = originalKey; // Stores the original key (e.g., 'B')
+                button.dataset.answerKey = originalKey; 
                 button.addEventListener('click', handleAnswerClick);
 
                 // Apply existing state if answered (Review Mode)
@@ -539,7 +577,6 @@
                         feedbackMessage.classList.remove('text-red-500');
                     } else if (originalKey === currentQuiz.userAnswer) {
                         button.classList.add('incorrect');
-                        // Use the captured correctDisplayLetter for review feedback
                         feedbackMessage.textContent = '❌ Review: Incorrect. The correct answer is ' + correctDisplayLetter + '.';
                         feedbackMessage.classList.add('text-red-500');
                         feedbackMessage.classList.remove('text-green-600');
@@ -549,7 +586,6 @@
                 answersContainer.appendChild(button);
             });
             
-            // If the question is not answered, clear feedback
             if (!currentQuiz.answered) {
                 feedbackMessage.textContent = '';
                 feedbackMessage.classList.remove('text-green-600', 'text-red-500');
@@ -567,51 +603,43 @@
             const correctKey = currentQuiz.correctAnswer;
             const allButtons = answersContainer.querySelectorAll('.answer-btn');
             
-            // 1. Update State
             currentQuiz.userAnswer = selectedKey; 
             currentQuiz.answered = true;
-            isAnswered = true; // Global state for current question
+            isAnswered = true; 
             
-            let correctDisplayLetter = ''; // Variable to hold the correct display letter
+            let correctDisplayLetter = ''; 
 
-            // 2. Apply styling, disable buttons, and find the correct display letter
-            allButtons.forEach((btn, i) => { // Use index 'i' to determine display letter
+            allButtons.forEach((btn, i) => { 
                 btn.disabled = true;
                 const key = btn.dataset.answerKey;
-                const displayLetter = String.fromCharCode(65 + i); // Calculate display letter
+                const displayLetter = String.fromCharCode(65 + i); 
 
                 if (key === correctKey) {
                     btn.classList.add('correct');
-                    correctDisplayLetter = displayLetter; // Capture the correct display letter
+                    correctDisplayLetter = displayLetter; 
                 } else if (key === selectedKey) {
                     btn.classList.add('incorrect');
                 }
             });
 
-            // 3. Update Score and Feedback
             if (selectedKey === correctKey) {
-                // Score update will happen in loadQuestion after navigation
                 feedbackMessage.textContent = '✅ Correct!';
                 feedbackMessage.classList.remove('text-red-500');
                 feedbackMessage.classList.add('text-green-600');
             } else {
-                // Use the correctDisplayLetter in the feedback
                 feedbackMessage.textContent = '❌ Incorrect. The correct answer is ' + correctDisplayLetter + '.';
                 feedbackMessage.classList.remove('text-green-600');
                 feedbackMessage.classList.add('text-red-500');
             }
             
-            // Recalculate score and update display immediately
             score = quizData.filter(q => q.answered && q.userAnswer === q.correctAnswer).length;
             scoreDisplay.textContent = `Score: ${score}`;
             
-            // 4. Update Navigation Buttons
             updateNavigationButtons();
         }
 
         function nextQuestion() {
             if (currentQuestionIndex === quizData.length - 1) {
-                // Handle "Show Results" click on the last question
                 if (quizData[currentQuestionIndex].answered) {
                     showResults(false);
                 }
@@ -636,11 +664,12 @@
             const max = originalQuizData.length;
 
             if (isNaN(qCount) || qCount <= 0 || qCount > max) {
-                alert(`Please enter a valid number of questions between 1 and ${max}.`);
+                // Using console.error instead of alert due to constraints
+                console.error(`Invalid input: Number of questions must be between 1 and ${max}.`);
                 return;
             }
             if (isNaN(tLimit) || tLimit <= 0) {
-                alert('Please enter a valid time limit in minutes (must be > 0).');
+                console.error('Invalid input: Time limit must be > 0 minutes.');
                 return;
             }
 
@@ -649,16 +678,14 @@
             
             const shuffledData = [...originalQuizData];
             shuffleArray(shuffledData);
-            // Slice and map to create a fresh set of questions for the test
             quizData = shuffledData.slice(0, qCount).map(q => ({
                 ...q, 
                 userAnswer: null, 
                 answered: false, 
-                shuffledKeys: null // Ensure answers are shuffled again for the test
+                shuffledKeys: null 
             })); 
             
-            startArea.classList.add('hidden');
-            quizArea.classList.add('hidden');
+            hideAllAreas();
             testQuizArea.classList.remove('hidden');
 
             testQuestionCount.textContent = quizData.length;
@@ -684,13 +711,10 @@
                 answersDiv.dataset.questionIndex = index;
                 
                 let answerKeys = Object.keys(q.answers);
-                // Shuffle keys for Test Mode
                 shuffleArray(answerKeys); 
                 
-                // Save the shuffled order for later result display
                 q.shuffledKeys = answerKeys;
                 
-                // Render buttons using the SHUFFLED order
                 answerKeys.forEach(originalKey => { 
                     const answerText = q.answers[originalKey];
                     const button = document.createElement('button');
@@ -699,9 +723,14 @@
                     const displayLetter = String.fromCharCode(65 + answersDiv.children.length); 
                     
                     button.textContent = `${displayLetter}. ${answerText}`;
-                    button.dataset.answerKey = originalKey; // Use the ORIGINAL key (A, B, C, D) for checking correctness
+                    button.dataset.answerKey = originalKey; 
                     button.dataset.qIndex = index; 
                     button.addEventListener('click', handleTestAnswerClick);
+
+                    // Check if already answered (for review mode)
+                    if (q.userAnswer === originalKey) {
+                        button.classList.add('selected');
+                    }
 
                     answersDiv.appendChild(button);
                 });
@@ -719,15 +748,12 @@
             const answersDiv = selectedButton.closest('div'); 
             const allButtons = answersDiv.querySelectorAll('.answer-btn');
             
-            // 1. Clear previous selection (if any)
             allButtons.forEach(btn => {
                 btn.classList.remove('selected');
             });
             
-            // 2. Mark the new selection
             selectedButton.classList.add('selected');
 
-            // 3. Save the answer to the data structure (using the ORIGINAL key)
             quizData[qIndex].userAnswer = selectedKey;
         }
         
@@ -735,7 +761,6 @@
             stopTimer(); 
             score = 0; 
             
-            // 1. Calculate Score & Reveal Answers
             quizData.forEach((q, index) => {
                 const userChoice = q.userAnswer;
                 const correctKey = q.correctAnswer;
@@ -764,10 +789,8 @@
                 }
             });
 
-            // 2. Show final results screen
             showResults(true);
             
-            // Hide the submit button after results are shown/processed
             submitTestBtn.classList.add('hidden');
         }
 
@@ -776,8 +799,7 @@
         function showResults(isTestMode) {
             const finalTimeString = stopTimer(); 
             
-            quizArea.classList.add('hidden');
-            testQuizArea.classList.add('hidden');
+            hideAllAreas();
             resultsArea.classList.remove('hidden');
             
             const totalQuestions = quizData.length;
@@ -809,30 +831,24 @@
                     detailsText += ` You finished within the time limit.`;
                 }
                 
-                testModeDetails.textContent = detailsText;
-                // Show the review button only in Test Mode
+                testModeDetails.innerHTML = detailsText;
                 reviewTestButton.classList.remove('hidden'); 
 
             } else {
-                // Non-Test Mode results
                 resultTitle.textContent = 'Quiz Complete!';
                 testResultDetails.classList.add('hidden');
-                // Hide the review button in Study/Random Mode
                 reviewTestButton.classList.add('hidden');
             }
         }
         
         function reviewTestAnswers() {
-            // This function returns the user from the results screen back to the Test Quiz area
-            resultsArea.classList.add('hidden');
+            hideAllAreas();
             testQuizArea.classList.remove('hidden');
             
-            // Ensure all test buttons remain disabled after the review starts
             document.querySelectorAll('#test-questions-container .answer-btn').forEach(btn => {
                 btn.disabled = true;
             });
             
-            // The submit button is now irrelevant, hide it.
             submitTestBtn.classList.add('hidden');
         }
 
@@ -843,25 +859,101 @@
             startTime = 0;
             mode = 'NORMAL';
             stopTimer(); 
-
-            resultsArea.classList.add('hidden');
-            quizArea.classList.add('hidden');
-            testQuizArea.classList.add('hidden');
-            startArea.classList.add('hidden'); 
-            testResultDetails.classList.add('hidden');
-
+            
             // Ensure the submit button is visible for the next test
             submitTestBtn.classList.remove('hidden'); 
 
-            statusArea.classList.remove('hidden');
+            loadFileAutomatically(); // Hides all areas and shows status/start
+        }
+
+        function hideAllAreas() {
+            quizArea.classList.add('hidden');
+            testQuizArea.classList.add('hidden');
+            resultsArea.classList.add('hidden');
+            startArea.classList.add('hidden'); 
+            searchArea.classList.add('hidden'); 
+        }
+
+        // --- Search Functions ---
+        
+        function toggleSearchMode() {
+            if (searchArea.classList.contains('hidden')) {
+                // Entering search mode
+                hideAllAreas();
+                searchArea.classList.remove('hidden');
+                searchResultsArea.classList.add('hidden');
+                searchValidationMessage.classList.add('hidden');
+                searchInput.value = '';
+                searchInput.focus();
+            } else {
+                // Exiting search mode
+                searchArea.classList.add('hidden');
+                startArea.classList.remove('hidden'); // Return to the start screen
+            }
+        }
+
+        function performSearch() {
+            const query = searchInput.value.trim().toLowerCase();
+            const queryWords = query.split(/\s+/).filter(word => word.length > 2); // Ignore very short words
+
+            if (queryWords.length < 3) {
+                searchValidationMessage.textContent = 'Please enter a minimum of 3 keywords to perform a search.';
+                searchValidationMessage.classList.remove('hidden');
+                searchResultsArea.classList.add('hidden');
+                return;
+            }
             
-            loadFileAutomatically();
+            searchValidationMessage.classList.add('hidden');
+            
+            const searchResults = originalQuizData.map(q => {
+                let score = 0;
+                const questionTextLower = q.question.toLowerCase();
+                
+                // Simple keyword matching for scoring
+                queryWords.forEach(word => {
+                    if (questionTextLower.includes(word)) {
+                        score += 1;
+                    }
+                });
+                
+                return {
+                    question: q.question,
+                    correctAnswer: q.answers[q.correctAnswer],
+                    score: score
+                };
+            })
+            // Filter out questions with zero score and sort by score descending
+            .filter(result => result.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3); // Take top 3 results
+
+            displaySearchResults(searchResults);
+        }
+
+        function displaySearchResults(results) {
+            searchResultsArea.classList.remove('hidden');
+            searchResultsArea.innerHTML = '<h3 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Closest Results:</h3>';
+
+            if (results.length === 0) {
+                searchResultsArea.innerHTML += '<p class="text-gray-600">No questions matched your search terms.</p>';
+                return;
+            }
+
+            results.forEach((result, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('mb-4', 'p-3', 'bg-white', 'rounded-lg', 'border');
+                
+                resultDiv.innerHTML = `
+                    <p class="font-bold text-base text-gray-800 mb-1">Q${index + 1}. ${result.question}</p>
+                    <p class="text-sm font-semibold text-green-700">A: ${result.correctAnswer}</p>
+                `;
+                searchResultsArea.appendChild(resultDiv);
+            });
         }
 
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', loadFileAutomatically); 
 
-        // Update listeners for navigation
         previousButton.addEventListener('click', previousQuestion); 
         nextButton.addEventListener('click', nextQuestion);
         restartButton.addEventListener('click', restartQuiz);
@@ -870,9 +962,11 @@
         randomStartBtn.addEventListener('click', () => startQuiz(true));  
         testStartBtn.addEventListener('click', startTestMode); 
         submitTestBtn.addEventListener('click', handleSubmitTest);
-        
-        // NEW EVENT LISTENER
         reviewTestButton.addEventListener('click', reviewTestAnswers);
+        
+        // NEW SEARCH LISTENERS
+        searchModeButton.addEventListener('click', toggleSearchMode);
+        executeSearchBtn.addEventListener('click', performSearch);
     </script>
 </body>
 </html>
